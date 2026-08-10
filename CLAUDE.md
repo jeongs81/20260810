@@ -280,6 +280,260 @@ python check.py
 
 ---
 
+## 🌿 Git 브랜치 전략
+
+### 브랜치 명명 규칙
+
+**피쳐 브랜치** (Wiki 적재용):
+```
+feature/wiki-YYYY-MM-DD-[회의체명]
+```
+
+**예시**:
+```
+feature/wiki-2026-08-15-제품주간회의
+feature/wiki-2026-08-20-온보딩개선회의
+```
+
+### 브랜치 생명 주기
+
+```
+1. 피쳐 브랜치 생성
+   git checkout -b feature/wiki-YYYY-MM-DD-[회의체명]
+
+2. Raw 파일 적재
+   raw/YYYY-MM-DD-[회의체명].md
+
+3. 검증 완료 (1→2→3 단계)
+   - Wiki 생성
+   - 기계 검증 통과
+   - 컨텐츠 검증 통과
+
+4. 커밋 & 푸시 (피쳐 브랜치)
+   git add .
+   git commit -m "..."
+   git push origin feature/wiki-YYYY-MM-DD-[회의체명]
+
+5. PR 생성
+   GitHub에서 feature/wiki-* → main PR 생성
+
+6. GitHub Actions 자동 검증
+   - check.py 자동 실행
+   - PR에 검증 결과 표시
+   - 오류 시 머지 차단
+
+7. PR 머지 (main)
+   검증 통과 시 "Squash and merge"
+
+8. 피쳐 브랜치 자동 삭제
+   머지 완료 시 자동 삭제
+```
+
+### 보호 규칙 (main 브랜치)
+
+- ✅ **PR 필수**: 직접 푸시 금지, 반드시 PR을 통해 머지
+- ✅ **검증 필수**: GitHub Actions check.py 통과 필수
+- ✅ **1명 이상 승인**: (선택) 코드 리뷰 요청
+- ✅ **머지 후 자동 삭제**: 피쳐 브랜치 자동 정리
+
+### 머지 전략
+
+**"Squash and merge" 권장**:
+- 피쳐 브랜치의 모든 커밋을 1개로 압축
+- main 히스토리 깔끔 유지
+- 각 회의록이 1개 커밋으로 기록
+
+```bash
+# 수동 머지 시
+git checkout main
+git pull origin main
+git merge --squash feature/wiki-YYYY-MM-DD-[회의체명]
+git commit -m "Wiki 변환: YYYY-MM-DD [회의체명]"
+git push origin main
+```
+
+---
+
+## 🔄 완전한 Wiki 적재 워크플로우 (브랜치 포함)
+
+### 시작 전 체크리스트
+- [ ] Raw 파일이 준비됨
+- [ ] 파일명이 규칙을 따름 (`YYYY-MM-DD-[회의체명].md`)
+- [ ] Frontmatter 완성됨 (회의일, 참석)
+- [ ] main 브랜치가 최신 상태 (`git pull origin main`)
+
+### 1️⃣ 피쳐 브랜치 생성
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/wiki-YYYY-MM-DD-[회의체명]
+```
+
+### 2️⃣ Raw 파일 적재
+
+```bash
+# raw/ 폴더에 회의록 파일 추가
+raw/YYYY-MM-DD-[회의체명].md
+```
+
+**체크리스트**:
+- [ ] 파일명: `YYYY-MM-DD-[회의체명].md`
+- [ ] Frontmatter: 회의일, 참석 필수
+- [ ] 결정/액션/보류 섹션 포함
+- [ ] 이전 액션 상태 업데이트 포함
+
+### 3️⃣ 1단계: Wiki 생성 (스킬)
+
+```bash
+/llm-wiki-ingest raw/YYYY-MM-DD-[회의체명].md
+```
+
+**성공 확인**:
+- [ ] `wiki/YYYY-MM-DD-[회의체명].md` 파일 생성됨
+- [ ] Frontmatter 자동 작성됨
+- [ ] 결정/액션/보류 3계층 구조 생성됨
+
+### 4️⃣ 2단계: 기계 검증 (스크립트)
+
+```bash
+python check.py
+```
+
+**성공 기준**:
+- [ ] 파일명 검증 통과 ✅
+- [ ] Frontmatter 검증 통과 ✅
+- [ ] 스키마 검증 통과 ✅
+- [ ] 일관성 검증 통과 ✅
+- [ ] **오류 0개** 확인
+
+**실패 시**:
+- Wiki 파일 수정 후 `python check.py` 재실행
+- Raw 파일 수정 필요 시 수정 후 1단계부터 재시작
+
+### 5️⃣ 3단계: 컨텐츠 검증 (스킬)
+
+```bash
+/wiki-content-review wiki/YYYY-MM-DD-[회의체명].md
+```
+
+**성공 기준**:
+- [ ] Raw ↔ Wiki 내용 일치도 ✅
+- [ ] 임의 생성 콘텐츠 없음 ✅
+- [ ] 누락된 중요 내용 없음 ✅
+- [ ] 액션 추적 정확 ✅
+- [ ] 의존성 표시 정확 ✅
+- [ ] **오류 0개** 확인
+
+**경고 시**:
+- Raw 또는 Wiki 수정 후 재검증
+- 진행 가능 (경고만 있으면)
+
+**오류 시**:
+- 1단계부터 재시작
+
+### 6️⃣ 커밋 & 푸시 (피쳐 브랜치)
+
+```bash
+git add raw/ wiki/
+git commit -m "Wiki 변환: YYYY-MM-DD [회의체명]
+
+- 결정: [주요 결정 1~2개]
+- 액션: [주요 액션 1~2개]
+
+기계 검증: ✅ 통과
+컨텐츠 검증: ✅ 통과
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
+
+git push origin feature/wiki-YYYY-MM-DD-[회의체명]
+```
+
+### 7️⃣ PR 생성
+
+**GitHub에서**:
+1. Pull Requests → New Pull Request
+2. Base: `main` ← Compare: `feature/wiki-YYYY-MM-DD-[회의체명]`
+3. 제목: `Wiki 변환: YYYY-MM-DD [회의체명]`
+4. 설명: Raw 파일과의 핵심 차이점 기술
+5. Create Pull Request
+
+**PR 설명 템플릿**:
+```markdown
+## 📋 Wiki 변환
+
+Raw: raw/YYYY-MM-DD-[회의체명].md
+Wiki: wiki/YYYY-MM-DD-[회의체명].md
+
+### 주요 결정
+- [결정 1]
+- [결정 2]
+
+### 주요 액션
+- [액션 1]
+- [액션 2]
+
+### 검증 상태
+- 기계 검증 (check.py): ✅ 통과
+- 컨텐츠 검증 (wiki-content-review): ✅ 통과
+```
+
+### 8️⃣ GitHub Actions 자동 검증
+
+**자동 진행**:
+1. PR 생성 시 `wiki-validate.yml` 워크플로우 자동 실행
+2. check.py 자동 검증
+3. 검증 결과를 PR 댓글로 표시
+4. 오류 발생 시 체크 ❌ (머지 차단)
+
+**결과 확인**:
+- [ ] PR에 자동 댓글로 `check.py` 결과 표시됨
+- [ ] 오류 없으면 체크 ✅
+- [ ] 오류 있으면 수정 후 다시 푸시
+
+### 9️⃣ PR 머지
+
+**조건**:
+- [ ] GitHub Actions 검증 통과 ✅
+- [ ] (선택) 코드 리뷰 승인
+
+**머지 방법**:
+```
+"Squash and merge" 선택 (권장)
+→ 머지 메시지 확인
+→ Confirm squash and merge
+```
+
+### 🔟 피쳐 브랜치 자동 삭제
+
+**자동 처리**:
+- 머지 완료 시 자동으로 피쳐 브랜치 삭제
+- (또는 PR 페이지에서 "Delete branch" 클릭)
+
+**확인**:
+```bash
+git branch -a
+# feature/wiki-YYYY-MM-DD-[회의체명] 사라짐 ✅
+```
+
+### 📊 최종 상태
+
+```bash
+# main 브랜치 최신 상태
+git checkout main
+git pull origin main
+
+# 커밋 확인
+git log --oneline | head -5
+# 2026-08-10 Wiki 변환: YYYY-MM-DD [회의체명] (squashed)
+
+# 피쳐 브랜치 삭제됨
+git branch -a
+# feature/wiki-* 없음 ✅
+```
+
+---
+
 ## 🚨 주요 검증 규칙
 
 ### 1단계 완료 후 바로 2단계로 (건너뛰기 금지!)
@@ -338,8 +592,9 @@ python check.py
 
 ---
 
-**상태**: 검증 워크플로우 순서 규칙 강화 (순차 진행 필수, 단계 건너뛰기 금지)  
-**마지막 수정**: 2026-08-10
+**상태**: Git 브랜치 전략 및 PR 워크플로우 추가 (피쳐 브랜치 기반 개발)  
+**마지막 수정**: 2026-08-10  
+**GitHub Actions**: wiki-validate.yml 적용 (PR 자동 검증)
 
 ---
 
