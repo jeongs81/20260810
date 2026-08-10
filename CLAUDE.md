@@ -84,11 +84,11 @@
 
 ---
 
-### 2단계: 기계 검증 (validate-wiki.js 스크립트)
+### 2단계: 기계 검증 (check.py 스크립트)
 
 **명령**:
 ```bash
-node validate-wiki.js
+python check.py
 ```
 
 **스크립트가 검증**:
@@ -165,7 +165,7 @@ node validate-wiki.js
 
 ### 2단계: 기계 검증
 ```
-node validate-wiki.js
+python check.py
 ```
 - [ ] 파일명 ✅
 - [ ] Frontmatter ✅
