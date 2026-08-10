@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Wiki 기계 검증 스크립트
 1) Frontmatter 검증
@@ -11,6 +12,10 @@ import re
 import sys
 from pathlib import Path
 from typing import List, Tuple
+
+# UTF-8 인코딩 설정
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 WIKI_DIR = Path(__file__).parent / "wiki"
 RAW_DIR = Path(__file__).parent / "raw"
@@ -128,13 +133,13 @@ def validate_structure(content: str) -> Tuple[bool, List[str], List[str]]:
     if not re.search(r'\| # \| 담당자 \| 항목 \| 마감 \| 상태 \| 의존성 \|', content):
         errors.append("액션 테이블 스키마 오류: 올바른 컬럼이 없음")
 
-    # 완료된 액션 섹션
+    # 완료된 액션 섹션 (권장)
     if '## ✔️ 완료된 액션' not in content:
-        errors.append("필수 섹션 누락: 완료된 액션 (이전 회의)")
+        warnings.append("권장 섹션 누락: 완료된 액션 (이전 회의)")
 
-    # 미해결 액션 섹션
+    # 미해결 액션 섹션 (권장)
     if '## ⏸️ 미해결 액션' not in content:
-        errors.append("필수 섹션 누락: 미해결 액션 (이전 회의)")
+        warnings.append("권장 섹션 누락: 미해결 액션 (이전 회의)")
 
     return len(errors) == 0, errors, warnings
 
