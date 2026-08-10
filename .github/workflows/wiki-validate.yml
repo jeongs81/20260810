@@ -1,0 +1,56 @@
+name: Wiki 검증
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wiki/**'
+      - 'raw/**'
+      - 'check.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'wiki/**'
+      - 'raw/**'
+      - 'check.py'
+
+jobs:
+  machine-validation:
+    name: 기계 검증 (check.py)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: check.py 실행
+        run: python check.py
+        continue-on-error: true
+
+      - name: 검증 결과 확인
+        run: |
+          python check.py > validation-result.txt 2>&1
+          cat validation-result.txt
+
+      - name: PR에 결과 댓글 추가
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = fs.readFileSync('validation-result.txt', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 📋 Wiki 기계 검증 결과\n\n\`\`\`\n${result}\n\`\`\``
+            });
+
+      - name: 검증 실패 시 체크 실패
+        run: python check.py
